@@ -41,7 +41,7 @@
 
 body {
   background-color: #15181f;
-  margin-inline: 10%;
+  margin-inline: 100px;
   margin-block: 20px;
 }
 
@@ -119,14 +119,14 @@ p {
   transform: scale(1.00);
   transition:transform 1000ms;
   flex-wrap: wrap;
-  width: 300px;
+  width: 375px;
 }
 
 .memoryContainer img {
   border-radius: 20px;
   object-fit: cover;
-  width: 300px;
-  height: 300px;
+  width: 375px;
+  height: 375px;
 }
 
 .modal {
@@ -241,4 +241,9 @@ textarea {
   text-align: left;
   color: var(--light-text-color);
   font-size: medium;
+}
+
+.small-text {
+  font-size: 12px;
+  margin-bottom: 10px;
 }

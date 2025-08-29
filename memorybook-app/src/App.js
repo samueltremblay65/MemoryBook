@@ -16,8 +16,9 @@ function App() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [memoryOpen, setMemoryOpen] = useState(null);
   const [memories, setMemories] = useState([]);
+  const [width, setWidth] = useState(window.innerWidth);
 
-  const rootURL = 'http://localhost:3001/static/';
+  const rootURL = 'http://localhost:3001/images/';
 
   function handleCreateModalClose()
   {
@@ -49,12 +50,28 @@ function App() {
     request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
     request.send();
 
+    const handleResize = () => {
+      setWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   // Creates a new memory from the user data
-  function handleCreateModalSubmit(headline, location, dateString, content, file)
+  function handleCreateModalSubmit(headline, location, dateString, content, files)
   {
-    let cover_url = rootURL + file.name;
+    let cover_url = rootURL + files[0].name;
+
+    let image_urls = files[0].name;
+
+    for(var i = 1; i < files.length; i++)
+    {
+      image_urls += "," + (rootURL + files[i].name);
+    }
 
     const memory = {
       title: headline,
@@ -62,14 +79,37 @@ function App() {
       location: location,
       content: content,
       date: dateString,
-      file: file
+      image_urls: image_urls
     }
 
-    setMemories((prev) => {return [...prev, memory]});
+    if(!memory.location)
+      {
+        memory.location = "Ottawa"
+      }
+    
+      if(!memory.date)
+      {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        let mm = today.getMonth() + 1; // Months start at 0!
+        let dd = today.getDate();
+    
+        if (dd < 10) dd = '0' + dd;
+        if (mm < 10) mm = '0' + mm;
+    
+        const formattedToday = dd + '/' + mm + '/' + yyyy;
+        memory.date = formattedToday;
+      }
+
+
     handleCreateModalClose();
     saveMemory(memory);
 
-    uploadImage(file);
+    uploadImage(files);
+
+    const local_memory = memory;
+    local_memory.cover_url = URL.createObjectURL(files[0]);
+    setMemories((prev) => {return [...prev, local_memory]});
   }
 
   function saveMemory(memory) { 
@@ -119,7 +159,15 @@ function App() {
     const numberMemories = memories.length;
 
     // TODO: determine best row size based on screen width
-    const ITEMS_PER_ROW = 3;
+    const ITEM_SIZE = 300;
+    let ITEMS_PER_ROW = 3;
+    ITEMS_PER_ROW = (width - 250) /  ITEM_SIZE;
+
+    ITEMS_PER_ROW = Math.floor(ITEMS_PER_ROW);
+
+    if(ITEMS_PER_ROW < 2) {
+      ITEMS_PER_ROW = 2;
+    }
 
     var rows = [];
 
@@ -165,9 +213,13 @@ function App() {
     )
   }
 
-  const uploadImage = async (image) => {
-    let formData = new FormData()
-    formData.append('file', image)
+  const uploadImage = async (files) => {
+    let formData = new FormData();
+
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+
     const response = await fetch('http://localhost:3001/image', {
       method: 'POST',
       body: formData,
@@ -183,7 +235,7 @@ function App() {
 
       <header className="App-header">
         <div className="flex_inline">
-          <h1>My Memories</h1>
+          <h1>Barcelona 2024</h1>
           <img src={add_icon} height="40px" alt="profile icon" onClick={() => setCreateModalOpen(true)}></img>
         </div>
         <ProfileMenu />
