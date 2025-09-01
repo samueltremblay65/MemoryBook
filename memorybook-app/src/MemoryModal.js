@@ -1,26 +1,24 @@
 import React from "react";
 
-import { useState } from "react";
+import icon_ellipsis from './Images/ellipsis-vertical.svg'
 
-export const MemoryModal = ({ onSubmit, onCancel, closeModal, memory }) => {
+import { useState, useEffect } from "react";
 
-  const [image, setImage] = useState(memory.cover_url);
-  const [imageNumber, setImageNumber] = useState(0);
+export const MemoryModal = ({closeModal, memory }) => {
+  const rootURL = "http://localhost:3001/images/";
+  const image_urls = memory.image_urls.split(',');
 
-  const rootURL = "http://localhost:3001/static/";
+  useEffect(() => {
+    gotoContent();
+  }, []);
 
-  function showNextImage()
-  {
-    const images = memory.image_urls.split(',');
+  function encodeSpaces(str) {
+    return str.replace(/\s/g, '%20');
+  }
 
-    console.log(imageNumber);
-
-    console.log(images.length);
-    setImage(rootURL + images[imageNumber]);
-
-    console.log(rootURL + images[imageNumber])
-
-    setImageNumber((prevState) => ( (prevState + 1) % images.length ));
+  function gotoContent() {
+    const title = document.getElementsByClassName("modal-content")[0];
+    title.scrollIntoView({ block: "end" });
   }
 
   function deleteMemory()
@@ -52,17 +50,20 @@ export const MemoryModal = ({ onSubmit, onCancel, closeModal, memory }) => {
     >
       <div className="modal memory">
         <div className="modal-header" onClick={() => closeModal("Modal was closed")}></div>
-
         <div className="modal-content">
-            <img className="modal-cover" src={image} onClick={showNextImage}></img>
-            <div className="memory-content">
-              <h1>{memory.title}</h1>
-              <p className="small-text">{memory.location} | {memory.date}</p>
-              <p>{memory.content}</p>
+          {image_urls.map((source) =>
+            <img className="modal-cover" src={source} key={source} onLoad={gotoContent}></img>
+          )}
+
+          <div className="memory-content">
+            <div className="options-button">
+              <span className="align-helper"></span>
+              <img src={icon_ellipsis} height={"32px"}></img>
             </div>
-
-            <button onClick={deleteMemory}>Delete</button>
-
+            <h1 id="modal_title">{memory.title}</h1>
+            <p className="small-text">{memory.location} | {memory.date}</p>
+            <p>{memory.content}</p>
+          </div>
         </div>
       </div>
     </div>

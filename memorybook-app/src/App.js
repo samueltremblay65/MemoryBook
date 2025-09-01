@@ -16,9 +16,11 @@ function App() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [memoryOpen, setMemoryOpen] = useState(null);
   const [memories, setMemories] = useState([]);
+  const [album, setAlbum] = useState([]);
   const [width, setWidth] = useState(window.innerWidth);
 
   const rootURL = 'http://localhost:3001/images/';
+  const album_id = 1;
 
   function handleCreateModalClose()
   {
@@ -36,19 +38,8 @@ function App() {
   }
 
   useEffect(() => {
-    // Send request to fetch memories from memorybook database
-    const request = new XMLHttpRequest();
-    
-    request.addEventListener('load', function () {
-      if (this.readyState === 4 && this.status === 200) {
-        var json = JSON.parse(request.responseText);
-        setMemories(json.memories);
-      }
-    });
-    
-    request.open('GET', 'http://localhost:3001/memories', true);
-    request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-    request.send();
+    sendAlbumRequest();
+    sendMemoryRequest();
 
     const handleResize = () => {
       setWidth(window.innerWidth);
@@ -61,12 +52,44 @@ function App() {
     };
   }, []);
 
+  function sendAlbumRequest() {
+    // Send request to fetch album from memorybook database
+    const request = new XMLHttpRequest();
+    
+    request.addEventListener('load', function () {
+      if (this.readyState === 4 && this.status === 200) {
+          var json = JSON.parse(request.responseText);
+          setAlbum(json.album[0]);
+        }
+      });
+      
+      request.open('GET', 'http://localhost:3001/albums/' + album_id, true);
+      request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+      request.send();
+  }
+
+  function sendMemoryRequest() {
+    // Send request to fetch memories from memorybook database
+    const request = new XMLHttpRequest();
+    
+    request.addEventListener('load', function () {
+      if (this.readyState === 4 && this.status === 200) {
+          var json = JSON.parse(request.responseText);
+          setMemories(json.memories);
+        }
+      });
+      
+      request.open('GET', 'http://localhost:3001/memories/' + album_id, true);
+      request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+      request.send();
+  }
+
   // Creates a new memory from the user data
   function handleCreateModalSubmit(headline, location, dateString, content, files)
   {
     let cover_url = rootURL + files[0].name;
 
-    let image_urls = files[0].name;
+    let image_urls = cover_url;
 
     for(var i = 1; i < files.length; i++)
     {
@@ -235,7 +258,7 @@ function App() {
 
       <header className="App-header">
         <div className="flex_inline">
-          <h1>Barcelona 2024</h1>
+          <h1>{album.name}</h1>
           <img src={add_icon} height="40px" alt="profile icon" onClick={() => setCreateModalOpen(true)}></img>
         </div>
         <ProfileMenu />
@@ -253,14 +276,10 @@ function App() {
           createPortal(
             <MemoryModal
               closeModal={handleMemoryClose}
-              onSubmit={handleMemoryClose}
-              onCancel={handleMemoryClose}
               memory={memoryOpen}>
             </MemoryModal>,
             document.body
           )}
-
-
       </header>
       
       {memories.length > 0 &&
