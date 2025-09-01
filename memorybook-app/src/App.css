@@ -1,5 +1,6 @@
 :root {
   --light-text-color: #ffffff;
+  --red: rgb(124, 39, 39);
 }
 
 .App {
@@ -138,9 +139,10 @@ img {
 }
 
 .memory {
-  width: 600px;
-  height: 80%;
+  width: 550px;
+  height: 85%;
   overflow-y: scroll;
+  overscroll-behavior: contain;
 }
 
 .memory::-webkit-scrollbar {
@@ -291,4 +293,35 @@ button {
 
 .options-button img {
   vertical-align: middle;
+}
+
+.popup-toggle-menu {
+  width: 120px;
+  background-color: rgb(101, 101, 101);
+  position: absolute;
+  border-radius: 10px;
+  transform: translateY(-100%);
+  right: 10px;
+}
+
+.popup-toggle-menu ul{
+  margin: 0px;
+  padding: 0px;
+}
+
+.popup-toggle-menu ul li {
+  list-style-type: none;
+  font-size: small;
+  color: rgb(225, 225, 225);
+  padding: 5px 10px;
+  border-radius: 10px;
+  cursor: default;
+}
+
+.popup-toggle-menu ul li:hover {
+  background-color: rgb(124, 124, 124);;
+}
+
+.popup-toggle-menu ul li:active {
+  background-color: rgb(135, 135, 135);;
 }

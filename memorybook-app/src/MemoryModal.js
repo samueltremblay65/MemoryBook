@@ -8,6 +8,8 @@ export const MemoryModal = ({closeModal, memory }) => {
   const rootURL = "http://localhost:3001/images/";
   const image_urls = memory.image_urls.split(',');
 
+  const [optionsMenu, setOptionsMenu] = useState(false);
+
   useEffect(() => {
     gotoContent();
   }, []);
@@ -40,6 +42,14 @@ export const MemoryModal = ({closeModal, memory }) => {
     request.send(json);
   }
 
+  function toggleMemoryOptionsMenu() {
+    setOptionsMenu(prevState => !prevState);
+  }
+
+  function hideMemoryOptionsMenu() {
+    setOptionsMenu(false);
+  }
+
   return (
     <div
       className="modal-container"
@@ -55,11 +65,20 @@ export const MemoryModal = ({closeModal, memory }) => {
             <img className="modal-cover" src={source} key={source} onLoad={gotoContent}></img>
           )}
 
-          <div className="memory-content">
-            <div className="options-button">
+          <div className="memory-content" onMouseLeave={hideMemoryOptionsMenu}>
+            <div className="options-button" onClick={toggleMemoryOptionsMenu}>
               <span className="align-helper"></span>
               <img src={icon_ellipsis} height={"32px"}></img>
             </div>
+            <div className="popup-toggle-menu" style={{visibility: optionsMenu? "visible" : "hidden" }}>
+              <ul>
+                <li>Edit memory</li>
+                <li>Add to album</li>
+                <li>Add to favourites</li>
+                <li>Delete memory</li>
+              </ul>
+            </div>
+
             <h1 id="modal_title">{memory.title}</h1>
             <p className="small-text">{memory.location} | {memory.date}</p>
             <p>{memory.content}</p>
