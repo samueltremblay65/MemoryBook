@@ -63,7 +63,7 @@ h2, h3, p {
 }
 
 h2 {
-  font-size: medium;
+  font-size: large;
 }
 
 p {
@@ -139,8 +139,8 @@ img {
 }
 
 .memory {
-  width: 550px;
-  height: 85%;
+  width: 500px;
+  max-height: 85%;
   overflow-y: scroll;
   overscroll-behavior: contain;
 }
@@ -262,9 +262,6 @@ button {
 }
 
 .options-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
   height: 32px;
   width: 32px;
   border-radius: 16px;
@@ -272,6 +269,7 @@ button {
   opacity: 0.4;
   text-align: center;
   transition: 0.5s;
+  margin-block: 5px;
 }
 
 .options-button:hover {
@@ -296,12 +294,9 @@ button {
 }
 
 .popup-toggle-menu {
-  width: 120px;
-  background-color: rgb(101, 101, 101);
   position: absolute;
+  background-color: rgb(101, 101, 101);
   border-radius: 10px;
-  transform: translateY(-100%);
-  right: 10px;
 }
 
 .popup-toggle-menu ul{
@@ -316,6 +311,25 @@ button {
   padding: 5px 10px;
   border-radius: 10px;
   cursor: default;
+
+  -webkit-user-select: none; 
+  -khtml-user-select: none;
+  -moz-user-select: none; 
+  -ms-user-select: none; 
+  user-select: none; 
+}
+
+.no-select {
+  -webkit-user-select: none; 
+  -khtml-user-select: none;
+  -moz-user-select: none; 
+  -ms-user-select: none; 
+  user-select: none; 
+}
+
+.memory-heading-container {
+  display: flex;
+  justify-content: space-between;
 }
 
 .popup-toggle-menu ul li:hover {
@@ -324,4 +338,57 @@ button {
 
 .popup-toggle-menu ul li:active {
   background-color: rgb(135, 135, 135);;
+}
+
+.popup-toggle-menu-container {
+  position: relative;
+}
+
+.memory-options-menu {
+  position: absolute;
+  right: 0px;
+  bottom: 0px;
+  width: 120px;
+}
+
+.profile-menu {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 100%;
+  width: 200px;
+  z-index: 1;
+  background-color: rgb(245, 245, 245);
+}
+
+.profile-menu ul li {
+  background-color: rgb(242, 242, 242);
+  color: #373737;
+  font-size: medium;
+}
+
+.profile-menu ul li:hover {
+  background-color: rgb(221, 221, 221);
+  transform: scaleY(1.1);
+  transition: 0.2s;
+}
+
+.profile-menu ul li:active {
+  background-color: rgb(226, 226, 226);
+}
+
+.toast {
+  position: fixed;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 30%;
+  min-width: 100px;
+  font-family: inherit;
+  font-size: small;
+  border-radius: 30px;
+  padding: 10px;
+  background-color: rgb(255, 255, 255);
+  opacity: 0.7;
+  transition: opacity 0.5s;
 }

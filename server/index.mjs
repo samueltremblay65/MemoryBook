@@ -190,12 +190,13 @@ app.post('/delete', async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   
   const body = Object.keys(req.body)[0];
-
   const memory = JSON.parse(body);
 
   if(!databaseOpen){
     openDatabase();
   }
+
+  console.log("Deleting memory with id: " + memory.memory_id);
 
   await db.run(`DELETE FROM memories WHERE memory_id=${memory.memory_id};`);
 

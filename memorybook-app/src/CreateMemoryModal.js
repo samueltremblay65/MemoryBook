@@ -11,6 +11,7 @@ export const CreateMemoryModal = ({ onSubmit, onCancel, closeModal }) => {
     const date = document.getElementById("cm_date").value;
     const content = document.getElementById("cm_content").value;
     const files = document.getElementById("file_selector").files;
+
     onSubmit(headline, location, date, content, files);
   }
 
@@ -29,7 +30,7 @@ export const CreateMemoryModal = ({ onSubmit, onCancel, closeModal }) => {
 
         <div className="modal-content">
 
-          <h3>Headline</h3>
+          <h3>Title</h3>
           <input name="headline" id="cm_headline" placeholder="Short description of your memory" autoComplete="off"></input>
 
           <h3>Location</h3>

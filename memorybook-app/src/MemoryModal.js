@@ -4,8 +4,7 @@ import icon_ellipsis from './Images/ellipsis-vertical.svg'
 
 import { useState, useEffect } from "react";
 
-export const MemoryModal = ({closeModal, memory }) => {
-  const rootURL = "http://localhost:3001/images/";
+export const MemoryModal = ({memory, closeModal }) => {
   const image_urls = memory.image_urls.split(',');
 
   const [optionsMenu, setOptionsMenu] = useState(false);
@@ -27,17 +26,15 @@ export const MemoryModal = ({closeModal, memory }) => {
   {
     const json = JSON.stringify(memory);
 
-    console.log(json);
-
     const request = new XMLHttpRequest();
     
     request.addEventListener('load', function () {
       if (this.readyState === 4 && this.status === 200) {
-        closeModal("Modal was closed");
+        closeModal({type: "delete", success: true});
       }
     });
     
-    request.open('POST', 'http://localhost:3001/memory/delete', true);
+    request.open('POST', 'http://localhost:3001/delete', true);
     request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
     request.send(json);
   }
@@ -55,32 +52,40 @@ export const MemoryModal = ({closeModal, memory }) => {
       className="modal-container"
       onClick={(e) => {
         if (e.target.className === "modal-container")
-          closeModal("Modal was closed");
+          closeModal({type: "close"});
       }}
     >
       <div className="modal memory">
-        <div className="modal-header" onClick={() => closeModal("Modal was closed")}></div>
+        <div className="modal-header" onClick={() => closeModal({type: "close"})}></div>
         <div className="modal-content">
           {image_urls.map((source) =>
             <img className="modal-cover" src={source} key={source} onLoad={gotoContent}></img>
           )}
 
           <div className="memory-content" onMouseLeave={hideMemoryOptionsMenu}>
-            <div className="options-button" onClick={toggleMemoryOptionsMenu}>
-              <span className="align-helper"></span>
-              <img src={icon_ellipsis} height={"32px"}></img>
+            {/* Put button in container, and move container to where button is to have the pop up list downwards.
+             Switch bottom = 0 to top = 0 to get the positioning correct */}
+            <div className="popup-toggle-menu-container">
+              <div className="popup-toggle-menu memory-options-menu" style={{visibility: optionsMenu? "visible" : "hidden" }}>
+                <ul>
+                  <li>Edit memory</li>
+                  <li>Add to album</li>
+                  <li>Add to favourites</li>
+                  <li>Add to favourites</li>
+                  <li onClick={deleteMemory}>Delete memory</li>
+                </ul>
+              </div>
             </div>
-            <div className="popup-toggle-menu" style={{visibility: optionsMenu? "visible" : "hidden" }}>
-              <ul>
-                <li>Edit memory</li>
-                <li>Add to album</li>
-                <li>Add to favourites</li>
-                <li>Delete memory</li>
-              </ul>
+            <div className="memory-heading-container">
+              <div className="memory-heading">
+                <h1 id="modal_title">{memory.title}</h1>
+                <p className="small-text">{memory.location} | {memory.date}</p>
+              </div>
+              <div className="options-button" onClick={toggleMemoryOptionsMenu}>
+                <span className="align-helper"></span>
+                <img src={icon_ellipsis} height={"32px"}></img>
+              </div>
             </div>
-
-            <h1 id="modal_title">{memory.title}</h1>
-            <p className="small-text">{memory.location} | {memory.date}</p>
             <p>{memory.content}</p>
           </div>
         </div>

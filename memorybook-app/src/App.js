@@ -11,6 +11,7 @@ import {v4 as uuid_v4} from "uuid";
 // Static resources
 import profile_icon from './Images/icon_profile_dark.png'
 import add_icon from './Images/icon_add.png'
+import { ToastMessenger } from './ToastMessenger';
 
 function App() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -19,22 +20,51 @@ function App() {
   const [album, setAlbum] = useState([]);
   const [width, setWidth] = useState(window.innerWidth);
 
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const [profileMenuOptions, setProfileMenuOptions] = useState(false);
+
   const rootURL = 'http://localhost:3001/images/';
   const album_id = 1;
+
+  function showToastMessage(message, length) {
+    const DEFFAULT_TIMEOUT = 3000;
+    const timeout = (length == null || length == "")? DEFFAULT_TIMEOUT:length;  
+    setToastMessage(message);
+    setToastVisible(true);
+    setTimeout(() => {
+      setToastVisible(false);
+    }, timeout);
+
+  }
 
   function handleCreateModalClose()
   {
     setCreateModalOpen(false);
   }
 
-  function handleMemoryClose()
+  function handleMemoryClose(action)
   {
     setMemoryOpen(null);
+    sendMemoryRequest();
+
+    if(action.type == "delete" && action.success) {
+      showToastMessage("Memory was deleted successfully");
+    }
   }
 
   function showMemoryModal(memory)
   {
     setMemoryOpen(memory);
+  }
+
+  function toggleProfileMenu() {
+    setProfileMenuOptions(prev => !prev);
+  }
+
+  function hideProfileMenu() {
+    setProfileMenuOptions(false);
   }
 
   useEffect(() => {
@@ -106,24 +136,28 @@ function App() {
     }
 
     if(!memory.location)
-      {
-        memory.location = "Ottawa"
-      }
-    
-      if(!memory.date)
-      {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        let mm = today.getMonth() + 1; // Months start at 0!
-        let dd = today.getDate();
-    
-        if (dd < 10) dd = '0' + dd;
-        if (mm < 10) mm = '0' + mm;
-    
-        const formattedToday = dd + '/' + mm + '/' + yyyy;
-        memory.date = formattedToday;
-      }
+    {
+      memory.location = "Ottawa, Ontario";
+    }
+  
+    if(!memory.date)
+    {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      let mm = today.getMonth() + 1; // Months start at 0!
+      let dd = today.getDate();
+  
+      if (dd < 10) dd = '0' + dd;
+      if (mm < 10) mm = '0' + mm;
+  
+      const formattedToday = dd + '/' + mm + '/' + yyyy;
+      memory.date = formattedToday;
+    }
 
+    if(!memory.headline || memory.headline.trim() == "") {
+      console.log("Headline");
+      memory.title = "Memory from " + memory.date;
+    }
 
     handleCreateModalClose();
     saveMemory(memory);
@@ -231,7 +265,17 @@ function App() {
     return (
       <div className="profile_menu">
         <p>Hi Sam</p>
-        <img src={profile_icon} height="48px" alt="profile icon"></img>
+        <div className="popup-toggle-menu-container" onMouseLeave={hideProfileMenu}>
+          <img src={profile_icon} onClick={toggleProfileMenu} height="48px" alt="profile icon"></img>
+          <div className="profile-menu popup-toggle-menu" style={{visibility: profileMenuOptions? "visible" : "hidden" }}>
+            <ul>
+              <li>Memory albums</li>
+              <li>View all memories</li>
+              <li>View profile</li>
+              <li>Sign out</li>
+            </ul>
+          </div>
+        </div>
       </div>
     )
   }
@@ -246,7 +290,7 @@ function App() {
     const response = await fetch('http://localhost:3001/image', {
       method: 'POST',
       body: formData,
-    })
+    });
   }
 
   // Display all the react app components of the home page
@@ -287,7 +331,11 @@ function App() {
       }
       {memories.length === 0 &&
         <h2 className="message">This section is empty. Add memories by clicking the '+' button above</h2>
-      }      
+      }
+
+      <div style={{ opacity: toastVisible? 0.7: 0}} className="toast">
+          <p>{toastMessage}</p>
+      </div>
     </div>
   );
 }
