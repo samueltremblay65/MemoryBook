@@ -39,6 +39,22 @@ export const MemoryModal = ({memory, closeModal }) => {
     request.send(json);
   }
 
+  function handleOptionsButtonClick(e) {
+    // Bring the button towards the center of the screen to ensure menu into view
+    if(e.clientY < 200) {
+      e.target.scrollIntoView({ 
+        block: 'center', 
+        behavior: 'smooth'
+      });
+      
+      // Prevents mouse leave and closing the menu in some cases
+      setTimeout(toggleMemoryOptionsMenu, 500);
+    }
+    else {
+      toggleMemoryOptionsMenu();
+    }
+  }
+
   function toggleMemoryOptionsMenu() {
     setOptionsMenu(prevState => !prevState);
   }
@@ -62,10 +78,10 @@ export const MemoryModal = ({memory, closeModal }) => {
             <img className="modal-cover" src={source} key={source} onLoad={gotoContent}></img>
           )}
 
-          <div className="memory-content" onMouseLeave={hideMemoryOptionsMenu}>
+          <div className="memory-content">
             {/* Put button in container, and move container to where button is to have the pop up list downwards.
              Switch bottom = 0 to top = 0 to get the positioning correct */}
-            <div className="popup-toggle-menu-container">
+            <div className="popup-toggle-menu-container" onMouseLeave={hideMemoryOptionsMenu}>
               <div className="popup-toggle-menu memory-options-menu" style={{visibility: optionsMenu? "visible" : "hidden" }}>
                 <ul>
                   <li>Edit memory</li>
@@ -81,7 +97,7 @@ export const MemoryModal = ({memory, closeModal }) => {
                 <h1 id="modal_title">{memory.title}</h1>
                 <p className="small-text">{memory.location} | {memory.date}</p>
               </div>
-              <div className="options-button" onClick={toggleMemoryOptionsMenu}>
+              <div className="options-button" onClick={handleOptionsButtonClick}>
                 <span className="align-helper"></span>
                 <img src={icon_ellipsis} height={"32px"}></img>
               </div>

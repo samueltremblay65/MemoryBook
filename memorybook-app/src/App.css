@@ -1,6 +1,7 @@
 :root {
-  --light-text-color: #ffffff;
+  --light-text-color: #ebebeb;
   --red: rgb(124, 39, 39);
+  --modal-dark-background: #545454;
 }
 
 .App {
@@ -17,6 +18,10 @@
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
   }
+}
+
+img {
+  -webkit-user-drag: none;
 }
 
 .App-header {
@@ -44,6 +49,10 @@ body {
   background-color: #15181f;
   margin-inline: 100px;
   margin-block: 20px;
+}
+
+.no-wrap {
+  white-space: nowrap;
 }
 
 .container_row {
@@ -115,19 +124,19 @@ img {
   transition:opacity 750ms;
 }
 
-.memoryContainer:hover {
+.memory-container:hover {
   transform: scale(1.05);
   transition:transform 1000ms;
 }
 
-.memoryContainer {
+.memory-container {
   transform: scale(1.00);
   transition:transform 1000ms;
   flex-wrap: wrap;
   width: 375px;
 }
 
-.memoryContainer img {
+.memory-container img {
   border-radius: 20px;
   object-fit: cover;
   width: 375px;
@@ -135,7 +144,8 @@ img {
 }
 
 .modal {
-  background-color: #394244;
+  background-color: var(--modal-dark-background);
+  margin: auto;
 }
 
 .memory {
@@ -191,7 +201,6 @@ input {
   padding: 5px;
   border-radius: 5px;
   box-sizing: border-box;
-
 }
 
 h3 {
@@ -210,6 +219,7 @@ textarea {
 
 button {
   font-family: inherit;
+  user-select: none;
 }
 
 .check_icon {
@@ -369,7 +379,6 @@ button {
 
 .profile-menu ul li:hover {
   background-color: rgb(221, 221, 221);
-  transform: scaleY(1.1);
   transition: 0.2s;
 }
 
@@ -391,4 +400,98 @@ button {
   background-color: rgb(255, 255, 255);
   opacity: 0.7;
   transition: opacity 0.5s;
+}
+
+.account-modal {
+  max-width: 400px;
+  padding: 20px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.form-label {
+  color: grey;
+  font-size: smaller;
+  display: none;
+}
+
+.form-field {
+  margin-block-end: 10px;
+}
+
+.account-modal h1 {
+  margin-block: 10px;
+}
+
+.account-modal input {
+  background-color: inherit;
+  outline: none;
+  font-size: medium;
+  border: 0px;
+  color: var(--light-text-color);
+  border-bottom: 1px solid grey;
+  border-radius: 0;
+  padding-top: 0px;
+  padding-left: 0px;
+}
+
+.account-modal input:focus {
+  outline: none;
+}
+
+.account-modal input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px var(--modal-dark-background) inset;
+  color: var(--light-text-color);
+  -webkit-text-fill-color: var(--light-text-color);
+}
+
+.account-modal input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px var(--modal-dark-background) inset;
+  color: var(--light-text-color);
+  -webkit-text-fill-color: var(--light-text-color);
+}
+
+.wide-button {
+  width: 100%;
+  border-radius: 20px;
+  outline: none;
+  border: 0px;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: medium;
+  padding: 5px;
+  background-color: rgb(133, 133, 133);
+  color: var(--light-text-color);
+  margin-bottom: 10px;
+}
+
+.wide-button:hover {
+  background-color: #8a8a8a;
+}
+
+.wide-button:active {
+  background-color: #979797;
+}
+
+.wide-button:last-of-type {
+  margin-bottom: 0px;
+}
+
+.yellow {
+  background-color: #c4af5c;
+}
+
+.yellow:hover {
+  background-color: rgb(212, 190, 99);
+}
+
+.yellow:active {
+  background-color: rgb(221, 199, 109);
+}
+
+.error-message {
+  color: red;
+  font-size: small;
 }

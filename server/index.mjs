@@ -8,6 +8,7 @@ import multer from "multer";
 import cors from "cors"
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { randomUUID } from "crypto";
 
 const app = express();
 const port = 3001;
@@ -131,19 +132,119 @@ function saveMemory(memory)
   });
 }
 
-async function db_fetch_all(query){
-  return new Promise(function(resolve,reject){
+async function db_has_match(query){
+  return new Promise(function(resolve, reject){
     if(!databaseOpen)
     {
       openDatabase();
     }
 
-    db.all(query, function(err,rows){
+    db.all(query, function(err, rows) {
+      if(rows == undefined) resolve(false);
+      else{
+        if(rows.length == 0) resolve(false);
+        if(rows[0] == null) resolve(false);
+        else resolve(true);
+      }
+    });
+  });
+}
+
+async function db_fetch_all(query){
+  return new Promise(function(resolve, reject){
+    if(!databaseOpen)
+    {
+      openDatabase();
+    }
+
+    db.all(query, function(err, rows){
         if(err){return reject(err);}
         resolve(rows);
       });
   });
 }
+
+app.post('/login', urlencodedParser, async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  
+  const body = Object.keys(req.body)[0];
+
+  const info = JSON.parse(body);
+
+  const username = info.username;
+  const password = info.password;
+
+  // TODO: Salt and hash
+
+  const database_match = await db_fetch_all(`SELECT * FROM users WHERE username="${username}"`);
+
+  if(database_match.length == 0) {
+    // No account found with username
+    res.status(404);
+    res.send("No account found with this username");
+  } else if(database_match[0].password != password) {
+    // Password invalid
+    res.status(401);
+    res.send("Password is incorrect");
+  } else {
+    // Successful login
+    res.status(200);
+    console.log(`User ${database_match[0].username} (ID#${database_match[0].user_id}) logged in successfully`);
+    res.send({username: database_match[0].username});
+  }
+});
+
+app.post('/signup', urlencodedParser, async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  
+  const body = Object.keys(req.body)[0];
+
+  const info = JSON.parse(body);
+
+  const username = info.username;
+  const password = info.password;
+  // TODO: Salt and hash
+
+  // Find empty id
+  let user_id;
+  do {
+    user_id = Math.floor(10000 + Math.random() * 90000);
+  }while(await db_has_match(`SELECT * FROM users WHERE user_id=${user_id}`));
+
+  const database_match = await db_has_match(`SELECT * FROM users WHERE username="${username}"`);
+
+  if(database_match) {
+    // Account already exists
+    res.status(400);
+    res.send("This username is already taken");
+  } else {
+    // TODO: Perform proper validation
+    if(username.length < 3 || username.length > 64) {
+      console.log("Short username");
+      res.status(400);
+      res.send("Username must be between 6 and 64 characters");
+    } if(password.length < 6 || password.length > 64) {
+      res.status(400);
+      res.send("Password must be between 6 and 64 characters");
+    }
+    else {
+        // Proceeding to account creation in database 
+        db.run(
+        `INSERT INTO users(user_id, username, password) VALUES (?,?,?)`,
+        [user_id, username, password],
+        function(error) {
+          if (error) {
+            res.status(400);
+            res.send("Account not created: account credentials are invalid");
+            return console.log(error.message);
+          }
+
+          console.log(`A row has been inserted with rowid ${this.lastID}`);
+          res.send({username: username});
+      });
+    }
+  }
+});
 
 app.post('/create', urlencodedParser, (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');

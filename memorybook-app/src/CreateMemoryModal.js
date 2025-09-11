@@ -31,7 +31,7 @@ export const CreateMemoryModal = ({ onSubmit, onCancel, closeModal }) => {
         <div className="modal-content">
 
           <h3>Title</h3>
-          <input name="headline" id="cm_headline" placeholder="Short description of your memory" autoComplete="off"></input>
+          <input name="headline" id="cm_headline" placeholder="Memory Title" autoComplete="off"></input>
 
           <h3>Location</h3>
           <input name="location" id="cm_location" placeholder="Where?" autoComplete="off"></input>
