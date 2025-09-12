@@ -2,17 +2,25 @@ import React from "react";
 
 import check_icon from './Images/checkmark.png'
 
-export const CreateMemoryModal = ({ onSubmit, onCancel, closeModal }) => {
+import { useState, useEffect } from "react";
+
+export const CreateMemoryModal = ({ onSubmit, closeModal, errorMessage }) => {
+
+  const [title, setTitle] = useState("");
+  const [location, setLocation] = useState("");
+  const [date, setDate] = useState("");
+  const [content, setContent] = useState("");
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+  });
 
   function submitForm()
   {
-    const headline = document.getElementById("cm_headline").value;
-    const location = document.getElementById("cm_location").value;
-    const date = document.getElementById("cm_date").value;
-    const content = document.getElementById("cm_content").value;
+    // No need to use a ref because this does nott impact rendering, just gets the files currently selected
     const files = document.getElementById("file_selector").files;
 
-    onSubmit(headline, location, date, content, files);
+    onSubmit(title, location, date, content, files);
   }
 
   return (
@@ -24,31 +32,38 @@ export const CreateMemoryModal = ({ onSubmit, onCancel, closeModal }) => {
       }}
     >
       <div className="modal padded-modal form-modal">
-        <div className="modal-header" onClick={() => closeModal("Modal was closed")}>
-          <p className="close_button">&times;</p>
-        </div>
+        <p className="close_button" onClick={() => closeModal("Modal was closed")}>&times;</p>
 
         <div className="modal-content">
+          <h1 className="modal-title">New Memory</h1>
 
-          <h3>Title</h3>
-          <input name="headline" id="cm_headline" placeholder="Memory Title" autoComplete="off"></input>
+          <p className="error-message" style={{ visibility: (errorMessage == ""? "hidden": "visible")}}>{errorMessage}</p>
 
-          <h3>Location</h3>
-          <input name="location" id="cm_location" placeholder="Where?" autoComplete="off"></input>
+          <div className="form-field">
+              <p className="form-label">Title</p>
+              <input value={title} onChange={ e => setTitle(e.target.value)} placeholder="Memory Title" autoComplete="off"></input>
+          </div>
 
-          <h3>Date</h3>
-          <input name="location" id="cm_date" placeholder="When?" autoComplete="off"></input>
+          <div className="form-field">
+              <p className="form-label">Location</p>
+              <input value={location} onChange={ e => setLocation(e.target.value)} placeholder="Location" autoComplete="off"></input>
+          </div>
+          
+          <div className="form-field">
+              <p className="form-label">Date</p>
+              <input value={date} onChange={ e => setDate(e.target.value)} placeholder="Date" autoComplete="off"></input>
+          </div>
 
-          <h3>Content</h3>
-          <textarea name="description" id="cm_content" placeholder="Describe this memory" autoComplete="off"></textarea>
+          <div className="form-field">
+              <p className="form-label">Content</p>
+              <textarea name="description" value={content} onChange={e => setContent(e.target.value)} placeholder="Describe this memory" autoComplete="off"></textarea>
+          </div>
+
 
           <h3>Photos</h3>
-          <input type="file" id="file_selector" name="files" multiple="multiple" autoComplete="off"></input>
-
-        </div>
-        
-        <div className="modal-footer">
-          <img className="check_icon" alt="submit button" src={check_icon} width="50px" onClick={() => submitForm()}></img>
+          <input type="file" id="file_selector" name="files" multiple="multiple"></input>
+          <br/>
+          <button className="wide-button yellow" alt="submit button" style={{"margin-top": "10px"}} onClick={() => submitForm()}>Create</button>
         </div>
       </div>
     </div>

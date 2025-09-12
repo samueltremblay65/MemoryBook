@@ -89,6 +89,7 @@ function App() {
 
   function handleCreateModalClose()
   {
+    document.body.style.overflow = "scroll";
     setCreateModalOpen(false);
   }
 
@@ -163,7 +164,7 @@ function App() {
   }
 
   // Creates a new memory from the user data
-  function handleCreateModalSubmit(headline, location, dateString, content, files)
+  function handleCreateModalSubmit(title, location, dateString, content, files)
   {
     let cover_url = rootURL + files[0].name;
     let image_urls = cover_url;
@@ -174,7 +175,7 @@ function App() {
     }
 
     const memory = {
-      title: headline,
+      title: title,
       cover_url: cover_url,
       location: location,
       content: content,
@@ -348,7 +349,7 @@ function App() {
 
       <header className="App-header">
         <div className="flex_inline no-select">
-          <h1>{album.name}</h1>
+          <h1 style={{textAlign: "left"}}>{album.name}</h1>
           <img src={add_icon} height="40px" alt="profile icon" onClick={() => setCreateModalOpen(true)}></img>
         </div>
         <ProfileMenu />
@@ -357,7 +358,7 @@ function App() {
             <CreateMemoryModal
               closeModal={handleCreateModalClose}
               onSubmit={handleCreateModalSubmit}
-              onCancel={handleCreateModalClose}>
+              errorMessage="">
             </CreateMemoryModal>,
             document.body
           )}
@@ -376,7 +377,7 @@ function App() {
         <MemoryContainer memories={memories}/>
       }
       {memories.length === 0 &&
-        <h2 className="message">This section is empty. Add memories by clicking the '+' button above</h2>
+        <h2 className="message">This album is empty. Add memories by clicking the '+' button that appears when the cursor is hovering over the album name</h2>
       }
 
       <div style={{ opacity: toastVisible? 0.7: 0}} className="toast">

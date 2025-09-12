@@ -176,6 +176,7 @@ img {
 .modal {
   border-radius: 20px;
   color: var(--light-text-color);
+  position: relative;
 }
 
 .padded-modal {
@@ -245,7 +246,9 @@ button {
   cursor: pointer;
   user-select: none;
   text-align: right;
-  transform: translateX(20px);
+  position: absolute;
+  top: 20px;
+  right: 20px;
 }
 
 .message {
@@ -263,6 +266,10 @@ button {
 
 .modal-content {
   padding: 10px;
+}
+
+.modal-title {
+  margin-block: 10px;
 }
 
 .modal-cover {
@@ -425,7 +432,7 @@ button {
   margin-block: 10px;
 }
 
-.account-modal input {
+.form-field input {
   background-color: inherit;
   outline: none;
   font-size: medium;
