@@ -1,7 +1,5 @@
 import React from "react";
 
-import check_icon from './Images/checkmark.png'
-
 import { useState, useEffect } from "react";
 
 export const CreateMemoryModal = ({ onSubmit, closeModal, errorMessage }) => {
@@ -37,7 +35,7 @@ export const CreateMemoryModal = ({ onSubmit, closeModal, errorMessage }) => {
         <div className="modal-content">
           <h1 className="modal-title">New Memory</h1>
 
-          <p className="error-message" style={{ visibility: (errorMessage == ""? "hidden": "visible")}}>{errorMessage}</p>
+          <p className="error-message" style={{ visibility: (errorMessage === ""? "hidden": "visible")}}>{errorMessage}</p>
 
           <div className="form-field">
               <p className="form-label">Title</p>
@@ -63,7 +61,7 @@ export const CreateMemoryModal = ({ onSubmit, closeModal, errorMessage }) => {
           <h3>Photos</h3>
           <input type="file" id="file_selector" name="files" multiple="multiple"></input>
           <br/>
-          <button className="wide-button yellow" alt="submit button" style={{"margin-top": "10px"}} onClick={() => submitForm()}>Create</button>
+          <button className="wide-button yellow" alt="submit button" style={{"marginTop": "10px"}} onClick={() => submitForm()}>Create</button>
         </div>
       </div>
     </div>

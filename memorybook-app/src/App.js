@@ -1,9 +1,10 @@
 import './App.css';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 
 import { CreateMemoryModal } from "./CreateMemoryModal";
+import { CreateAlbumModal } from "./CreateAlbumModal";
 import { MemoryModal } from "./MemoryModal";
 import { AccountModal } from './AccountModal';
 
@@ -17,8 +18,10 @@ import expand_icon from './Images/icon_expand.png'
 function App() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [memoryOpen, setMemoryOpen] = useState(null);
+  const [createAlbumModal, setCreateAlbumModal] = useState(false);
   const [memories, setMemories] = useState([]);
   const [album, setAlbum] = useState([]);
+  const [albums, setAlbums] = useState([]);
   const [width, setWidth] = useState(window.innerWidth);
 
   const [toastMessage, setToastMessage] = useState("");
@@ -29,9 +32,10 @@ function App() {
   const [profileMenuOptions, setProfileMenuOptions] = useState(false);
 
   const rootURL = 'http://localhost:3001/images/';
-  const album_id = 1;
 
   const [session, setSession] = useState("");
+
+  const [menu, setMenu] = useState("");
 
   function accountActionHandler(hasExisitingAccount, username, password, name) {
     if(hasExisitingAccount) {
@@ -87,6 +91,12 @@ function App() {
     }, timeout);
   }
 
+  function handleCreateAlbumClose()
+  {
+    document.body.style.overflow = "scroll";
+    setCreateAlbumModal(false);
+  }
+
   function handleCreateModalClose()
   {
     document.body.style.overflow = "scroll";
@@ -96,7 +106,7 @@ function App() {
   function handleMemoryClose(action)
   {
     setMemoryOpen(null);
-    sendMemoryRequest();
+    requestMemoriesByAlbumId(album.album_id);
 
     if(action.type === "delete" && action.success) {
       showToastMessage("Memory was deleted successfully");
@@ -117,8 +127,8 @@ function App() {
   }
 
   useEffect(() => {
-    sendAlbumRequest();
-    sendMemoryRequest();
+    sendAlbumListRequest();
+    requestAlbumById(1);
 
     const handleResize = () => {
       setWidth(window.innerWidth);
@@ -131,7 +141,7 @@ function App() {
     };
   }, []);
 
-  function sendAlbumRequest() {
+  const requestAlbumById = useCallback((album_id) => {
     // Send request to fetch album from memorybook database
     const request = new XMLHttpRequest();
     
@@ -139,15 +149,32 @@ function App() {
       if (this.readyState === 4 && this.status === 200) {
           var json = JSON.parse(request.responseText);
           setAlbum(json.album[0]);
+          requestMemoriesByAlbumId(json.album[0].album_id);
         }
       });
       
       request.open('GET', 'http://localhost:3001/albums/' + album_id, true);
       request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
       request.send();
+  }, []);
+
+  function sendAlbumListRequest() {
+        // Send request to fetch album from memorybook database
+    const request = new XMLHttpRequest();
+    
+    request.addEventListener('load', function () {
+      if (this.readyState === 4 && this.status === 200) {
+          var json = JSON.parse(request.responseText);
+          setAlbums(json);
+        }
+      });
+      
+      request.open('GET', 'http://localhost:3001/albums/', true);
+      request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+      request.send();
   }
 
-  function sendMemoryRequest() {
+  function requestMemoriesByAlbumId(album_id) {
     // Send request to fetch memories from memorybook database
     const request = new XMLHttpRequest();
     
@@ -164,7 +191,7 @@ function App() {
   }
 
   // Creates a new memory from the user data
-  function handleCreateModalSubmit(title, location, dateString, content, files)
+  function handleCreateModalSubmit(title, location, dateString, content, files, album_id)
   {
     let cover_url = rootURL + files[0].name;
     let image_urls = cover_url;
@@ -180,7 +207,8 @@ function App() {
       location: location,
       content: content,
       date: dateString,
-      image_urls: image_urls
+      image_urls: image_urls,
+      album_id: album.album_id
     }
 
     if(!memory.location)
@@ -210,7 +238,39 @@ function App() {
     saveMemory(memory);
 
     uploadImage(files);
-    sendMemoryRequest();
+    requestMemoriesByAlbumId(album.album_id);
+  }
+
+    // Creates a new memory from the user data
+  function handleCreateAlbumSubmit(title, description, cover)
+  {
+    let cover_url = rootURL + cover.name;
+
+    const album = {
+      title: title,
+      description: description,
+      cover_url: cover_url
+    }
+
+    handleCreateAlbumClose();
+    uploadImage([cover]);
+    createAlbum(album);
+  }
+
+  function createAlbum(album) {
+    const json = JSON.stringify(album);
+
+    const request = new XMLHttpRequest();
+    
+    request.addEventListener('load', function () {
+      if (this.readyState === 4 && this.status === 200) {
+        console.log(this.responseText);
+      }
+    });
+    
+    request.open('POST', 'http://localhost:3001/create/album', true);
+    request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+    request.send(json);
   }
 
   function saveMemory(memory) { 
@@ -224,21 +284,79 @@ function App() {
       }
     });
     
-    request.open('POST', 'http://localhost:3001/create', true);
+    request.open('POST', 'http://localhost:3001/create/memory', true);
     request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
     request.send(json);
-}
+  }
+
+  // TODO: Refactor to reuse with MemoryContainer
+  function AlbumContainer(props) {
+    if(props == null || props.albums == null || props.albums.length === 0) {
+      return <div>No albums to display</div>
+    }
+
+    const albums = props.albums;
+
+    // TODO: determine best row size based on screen width
+    const ITEM_SIZE = 375;
+    const ITEMS_PER_ROW = Math.floor((width - 250) /  ITEM_SIZE);
+    var numberRows = Math.ceil(albums.length / ITEMS_PER_ROW);
+
+    var rows = [];
+    var row = [];
+
+    for(let i = 0; i < numberRows; i++) {
+      for(let j = 0; j < ITEMS_PER_ROW; j++) {
+        if(i * ITEMS_PER_ROW + j >= albums.length) {
+          row.push({empty: true});
+        }
+        else row.push(albums[i * ITEMS_PER_ROW + j]);
+      }
+      rows.push(row);
+      row = [];
+    }
+
+    return (
+      <div className='grid-container no-select'>
+        {rows.map(row => (
+          <AlbumRow key={uuid_v4()} albums={row} />
+        ))}
+      </div>
+    );
+  }
+
+  function AlbumRow(props)
+  {
+    const albumItems = props.albums.map(album => <Album key={album.album_id} album={album}/>)
+    return (<div className="container-row">
+      {albumItems}
+    </div>);
+  }
+
+  function Album(props) {
+    // Trick to get items to display correctly in rows
+    if(props.album == null || props.album.empty)
+    {
+      return(<div className="grid-item-container no-select" style={{"width": "375px", "height": "375px"}} onClick={() => {}}></div>);
+    }
+
+    return (<div className="grid-item-container no-select" onClick={() => { setAlbum(props.album); requestMemoriesByAlbumId(props.album.album_id); setMenu(""); }}>
+      <img src={props.album.cover_url} alt="album cover" style={{"width": "375px", "height": "375px"}}></img>
+      <h2>{props.album.title}</h2>
+    </div>);
+  }
 
   function Memory(props) {
     // Trick to get items to display correctly in rows
-    if(props.memory.empty)
+    console.log(props);
+    if(props.memory == null || props.memory.empty)
     {
-      return(<div className="memory-container no-select" onClick={() => {}}></div>) 
+      return(<div className="grid-item-container no-select" style={{"width": "375px", "height": "375px"}} onClick={() => {}}></div>) 
     }
 
     // Display memory container
-    return (<div className="memory-container no-select" onClick={() => showMemoryModal(props.memory)}>
-      <img src={props.memory.cover_url} alt="memory cover"></img>
+    return (<div className="grid-item-container no-select" onClick={() => showMemoryModal(props.memory)}>
+      <img src={props.memory.cover_url} alt="memory cover" style={{"width": "375px", "height": "375px"}}></img>
       <h2>{props.memory.title}</h2>
       <p>{props.memory.location} | {props.memory.date}</p>
     </div>)
@@ -246,9 +364,10 @@ function App() {
 
   function MemoryRow(props)
   {
-    return (<div className="container_row">
+    console.log("Number of items: " + props.memories.length); 
+    return (<div className="container-row">
       {props.memories.map(memory => (
-          <Memory key={memory.memory_id || uuid_v4()} memory={memory} />
+          <Memory key={uuid_v4()} memory={memory} />
         ))}
     </div>);
   }
@@ -256,44 +375,28 @@ function App() {
   function MemoryContainer(props)
   {
     const memories = props.memories;
-    const numberMemories = memories.length;
 
     // TODO: determine best row size based on screen width
     const ITEM_SIZE = 375;
-    let ITEMS_PER_ROW = 3;
-
-    ITEMS_PER_ROW = (width - 250) /  ITEM_SIZE;
-
-    ITEMS_PER_ROW = Math.floor(ITEMS_PER_ROW);
+    const ITEMS_PER_ROW = Math.floor((width - 250) /  ITEM_SIZE);
+    var numberRows = Math.ceil(memories.length / ITEMS_PER_ROW);
 
     var rows = [];
-
-    // Put memories into different rows, render all rows
-    var i = 0;
     var row = [];
 
-    while(i < numberMemories)
-    {
-      row.push(memories[i])
-      if((i+1) % ITEMS_PER_ROW === 0)
-      {
-        rows.push(row);
-        row = [];
-      }
-      i++;
-    }
-
-    if(i % ITEMS_PER_ROW !== 0)
-    {
-      for(var j = 0; j < ITEMS_PER_ROW - (i % ITEMS_PER_ROW); j++)
-      {
-        row.push({empty: true});
+    for(let i = 0; i < numberRows; i++) {
+      for(let j = 0; j < ITEMS_PER_ROW; j++) {
+        if(i * ITEMS_PER_ROW + j >= albums.length) {
+          row.push({empty: true});
+        }
+        else row.push(memories[i * ITEMS_PER_ROW + j]);
       }
       rows.push(row);
+      row = [];
     }
 
     return(      
-    <div className="container">
+    <div className="grid-container">
       {rows.map(row => (
           <MemoryRow key={uuid_v4()} memories={row} />
         ))}
@@ -310,10 +413,10 @@ function App() {
 
           <div className="profile-menu popup-toggle-menu" style={{visibility: profileMenuOptions? "visible" : "hidden" }}>
             <ul>
-              <li>Memory albums</li>
+              <li onClick={() => {setMenu("album_list"); hideProfileMenu()}}>Memory albums</li>
               <li>View all memories</li>
               <li>View profile</li>
-              <li onClick={() => setSession("")}>Sign out</li>
+              <li onClick={() => {setSession(""); hideProfileMenu();}}>Sign out</li>
             </ul>
           </div>
         </div>
@@ -328,6 +431,7 @@ function App() {
       formData.append('files', files[i]);
     }
 
+    // TODO: Add status for image
     const response = await fetch('http://localhost:3001/image', {
       method: 'POST',
       body: formData,
@@ -340,6 +444,43 @@ function App() {
     );
   }
 
+  if(menu === "album_list") {
+      // If user is logged in, display main app
+    return (
+      <div className="App">
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400&display=swap');
+        </style>
+
+        <header className="App-header">
+          <div className="flex_inline no-select">
+            <h1 style={{textAlign: "left"}}>My Memory Albums</h1>
+            <img src={add_icon} height="40px" alt="create album icon" onClick={() => setCreateAlbumModal(true)}></img>
+          </div>
+          <ProfileMenu />
+
+          {createAlbumModal &&
+            createPortal(
+              <CreateAlbumModal
+                closeModal={handleCreateAlbumClose}
+                onSubmit={handleCreateAlbumSubmit}
+                errorMessage="">
+              </CreateAlbumModal>,
+              document.body
+          )}
+
+        </header>
+      
+        {menu === "album_list" && 
+          <AlbumContainer albums={albums}/>
+        } 
+        <div style={{ opacity: toastVisible? 0.7: 0}} className="toast">
+            <p>{toastMessage}</p>
+        </div>
+      </div>
+    );
+  }
+
   // If user is logged in, display main app
   return (
     <div className="App">
@@ -349,10 +490,12 @@ function App() {
 
       <header className="App-header">
         <div className="flex_inline no-select">
-          <h1 style={{textAlign: "left"}}>{album.name}</h1>
+          <h1 style={{textAlign: "left"}}>{album.title}</h1>
           <img src={add_icon} height="40px" alt="profile icon" onClick={() => setCreateModalOpen(true)}></img>
         </div>
         <ProfileMenu />
+
+        {/* Main page modals */}
         {createModalOpen &&
           createPortal(
             <CreateMemoryModal
@@ -373,10 +516,10 @@ function App() {
           )}
       </header>
       
-      {memories.length > 0 &&
+      {menu === "" && memories.length > 0 &&
         <MemoryContainer memories={memories}/>
       }
-      {memories.length === 0 &&
+      {menu === "" && memories.length === 0 &&
         <h2 className="message">This album is empty. Add memories by clicking the '+' button that appears when the cursor is hovering over the album name</h2>
       }
 

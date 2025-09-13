@@ -55,13 +55,6 @@ body {
   white-space: nowrap;
 }
 
-.container_row {
-  display: flex;
-  justify-content: space-between;
-  color: aliceblue;
-  margin-bottom: 40px;
-}
-
 h1 {
   margin-bottom: 20px;
 }
@@ -124,23 +117,30 @@ img {
   transition:opacity 750ms;
 }
 
-.memory-container:hover {
+.grid-container {
+  color: var(--light-text-color);
+}
+
+.container-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 40px;
+}
+
+.grid-item-container:hover {
   transform: scale(1.05);
   transition:transform 1000ms;
 }
 
-.memory-container {
+.grid-item-container {
   transform: scale(1.00);
   transition:transform 1000ms;
   flex-wrap: wrap;
-  width: 375px;
 }
 
-.memory-container img {
+.grid-item-container img {
   border-radius: 20px;
   object-fit: cover;
-  width: 375px;
-  height: 375px;
 }
 
 .modal {
@@ -501,4 +501,9 @@ button {
 .error-message {
   color: red;
   font-size: small;
+}
+
+.menu-container {
+  text-align: left;
+  color: var(--light-text-color);
 }
