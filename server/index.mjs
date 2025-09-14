@@ -8,7 +8,6 @@ import multer from "multer";
 import cors from "cors"
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { randomUUID } from "crypto";
 
 const app = express();
 const port = 3001;
@@ -37,6 +36,7 @@ const username = "Sam";
 const password = "Password1"
 const create_base_user = false;
 const create_base_album = false;
+let currentUser = null;
 
 app.use("/images", express.static(img_path));
 
@@ -46,7 +46,7 @@ db = new sqlite3.Database(db_path, (err) => {
     } else {
       // Create memories and pictures table if they don't exist
       db.run('CREATE TABLE IF NOT EXISTS users(user_id INTEGER PRIMARY KEY, username string, password string)');
-      db.run('CREATE TABLE IF NOT EXISTS albums(album_id INTEGER PRIMARY KEY autoincrement, title string not null, author INTEGER not null, description text, cover_url string not null, FOREIGN KEY(author) REFERENCES users(user_id))');
+      db.run('CREATE TABLE IF NOT EXISTS albums(album_id INTEGER PRIMARY KEY autoincrement, title string not null, author INTEGER not null, description text, date string, location string, cover_url string, FOREIGN KEY(author) REFERENCES users(user_id))');
       db.run('CREATE TABLE IF NOT EXISTS memories(memory_id INTEGER PRIMARY KEY autoincrement, user INTEGER not null, album INTEGER not null, title string not null, content text, location string, date string, image_urls text, image_ids text, cover_url string, FOREIGN KEY(user) REFERENCES users(user_id), FOREIGN KEY(album) REFERENCES albums(album_id))');
       db.run(`CREATE TABLE IF NOT EXISTS pictures(picture_id INTEGER PRIMARY KEY autoincrement, source string not null, memory INTEGER not null, FOREIGN KEY(memory) REFERENCES memories(memory_id))`);
       
@@ -101,7 +101,7 @@ function createAlbum(album) {
 
   db.run(
     `INSERT INTO albums(title, author, description, cover_url) VALUES (?,?,?,?)`,
-     [album.title, user_id, album.description, album.cover_url],
+     [album.title, currentUser.user_id, album.description, album.cover_url],
      function(error) {
       if (error) {
         return console.log(error.message);
@@ -111,7 +111,7 @@ function createAlbum(album) {
   });
 }
 
-function saveMemory(memory)
+async function saveMemory(memory)
 {
   if(!databaseOpen)
   {
@@ -147,6 +147,28 @@ function saveMemory(memory)
 
       console.log(`A row has been inserted with rowid ${this.lastID}`);
   });
+
+  // Give album the memory cover if album has no cover_url
+  const album = await getAlbumById(memory.album_id);
+  if(album.cover_url == null) {
+    console.log(memory.cover_url);
+    const updateQuery = `UPDATE albums SET cover_url = "${memory.cover_url}" WHERE album_id = ${album.album_id}`;
+    db.run(updateQuery, function (err) {
+      if (err) {
+        console.error('Error updating cover_url:', err.message);
+      }
+    });
+  }
+}
+
+async function getUserById(id) {
+  const response = await db_fetch_all(`SELECT * FROM users WHERE user_id=${id} LIMIT 1`);
+  return response[0];
+}
+
+async function getAlbumById(id) {
+  const response = await db_fetch_all(`SELECT * FROM albums WHERE album_id=${id} LIMIT 1`);
+  return response[0];
 }
 
 async function db_has_match(query){
@@ -207,7 +229,8 @@ app.post('/login', urlencodedParser, async (req, res) => {
     // Successful login
     res.status(200);
     console.log(`User ${database_match[0].username} (ID#${database_match[0].user_id}) logged in successfully`);
-    res.send({username: database_match[0].username});
+    res.send({user_id: database_match[0].user_id, username: database_match[0].username});
+    currentUser = database_match[0];
   }
 });
 
@@ -249,7 +272,7 @@ app.post('/signup', urlencodedParser, async (req, res) => {
         db.run(
         `INSERT INTO users(user_id, username, password) VALUES (?,?,?)`,
         [user_id, username, password],
-        function(error) {
+        async function(error) {
           if (error) {
             res.status(400);
             res.send("Account not created: account credentials are invalid");
@@ -257,7 +280,15 @@ app.post('/signup', urlencodedParser, async (req, res) => {
           }
 
           console.log(`A row has been inserted with rowid ${this.lastID}`);
-          res.send({username: username});
+
+          const user = await getUserById(user_id);
+          // For development
+          currentUser = user;
+
+          const starterAlbum = {title: "My memory album", author: user.user_id, description: "", cover_url: null}
+          createAlbum(starterAlbum);
+
+          res.send({username: user.username, user_id: user.user_id});
       });
     }
   }
@@ -296,8 +327,8 @@ app.get('/albums/:id', async (req, res) => {
   res.json({album: album});
 });
 
-app.get('/albums', async (req, res) => {
-  const albums = await db_fetch_all(`SELECT * FROM albums LIMIT 25`);
+app.get('/user/albums', async (req, res) => {
+  const albums = await db_fetch_all(`SELECT * FROM albums WHERE author=${currentUser.user_id} LIMIT 25`);
   res.json(albums);
 });
 
@@ -310,6 +341,10 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     cb(null, file.originalname)
   },
+});
+
+app.get('/test', (req, res) => {
+  res.send(`${req.protocol}://${req.headers['host']}/image`);
 });
 
 const upload = multer({ storage: storage });

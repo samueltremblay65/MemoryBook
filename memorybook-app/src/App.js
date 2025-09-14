@@ -14,6 +14,7 @@ import {v4 as uuid_v4} from "uuid";
 import profile_icon from './Images/icon_profile_dark.png'
 import add_icon from './Images/icon_add.png'
 import expand_icon from './Images/icon_expand.png'
+import logo from './Images/Logo.png'
 
 function App() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -31,9 +32,10 @@ function App() {
 
   const [profileMenuOptions, setProfileMenuOptions] = useState(false);
 
+  // For development
   const rootURL = 'http://localhost:3001/images/';
 
-  const [session, setSession] = useState("");
+  const [session, setSession] = useState(null);
 
   const [menu, setMenu] = useState("");
 
@@ -45,9 +47,11 @@ function App() {
       
       request.addEventListener('load', function () {
         if (this.readyState === 4 && this.status === 200) {
-          console.log(request.responseText);
-          var username = JSON.parse(request.responseText).username;
-          setSession(username);
+          const username = JSON.parse(request.responseText).username;
+          const user_id = JSON.parse(request.responseText).user_id;
+          setSession({username: username, user_id: user_id});
+
+          sendAlbumListRequest();
         }
         else if (this.readyState === 4) {
           setErrorMessage(request.responseText);
@@ -66,9 +70,11 @@ function App() {
       
       request.addEventListener('load', function () {
         if (this.readyState === 4 && this.status === 200) {
-          console.log(request.responseText);
           const username = JSON.parse(request.responseText).username;
-          setSession(username);
+          const user_id = JSON.parse(request.responseText).user_id;
+          setSession({username: username, user_id: user_id});
+
+          sendAlbumListRequest();
         }
         else if (this.readyState === 4) {
           setErrorMessage(request.responseText);
@@ -127,9 +133,6 @@ function App() {
   }
 
   useEffect(() => {
-    sendAlbumListRequest();
-    requestAlbumById(1);
-
     const handleResize = () => {
       setWidth(window.innerWidth);
     };
@@ -141,35 +144,19 @@ function App() {
     };
   }, []);
 
-  const requestAlbumById = useCallback((album_id) => {
+  function sendAlbumListRequest() {
     // Send request to fetch album from memorybook database
     const request = new XMLHttpRequest();
     
     request.addEventListener('load', function () {
       if (this.readyState === 4 && this.status === 200) {
           var json = JSON.parse(request.responseText);
-          setAlbum(json.album[0]);
-          requestMemoriesByAlbumId(json.album[0].album_id);
-        }
-      });
-      
-      request.open('GET', 'http://localhost:3001/albums/' + album_id, true);
-      request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-      request.send();
-  }, []);
-
-  function sendAlbumListRequest() {
-        // Send request to fetch album from memorybook database
-    const request = new XMLHttpRequest();
-    
-    request.addEventListener('load', function () {
-      if (this.readyState === 4 && this.status === 200) {
-          var json = JSON.parse(request.responseText);
           setAlbums(json);
+          loadAlbum(json[0]);
         }
       });
       
-      request.open('GET', 'http://localhost:3001/albums/', true);
+      request.open('GET', 'http://localhost:3001/user/albums', true);
       request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
       request.send();
   }
@@ -185,13 +172,19 @@ function App() {
         }
       });
       
+      console.log(album_id);
       request.open('GET', 'http://localhost:3001/memories/' + album_id, true);
       request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
       request.send();
   }
 
+  function loadAlbum(album) {
+    setAlbum(album);
+    requestMemoriesByAlbumId(album.album_id);
+  }
+
   // Creates a new memory from the user data
-  function handleCreateModalSubmit(title, location, dateString, content, files, album_id)
+  async function handleCreateModalSubmit(title, location, dateString, content, files, album_id)
   {
     let cover_url = rootURL + files[0].name;
     let image_urls = cover_url;
@@ -265,6 +258,7 @@ function App() {
     request.addEventListener('load', function () {
       if (this.readyState === 4 && this.status === 200) {
         console.log(this.responseText);
+        sendAlbumListRequest();
       }
     });
     
@@ -340,15 +334,17 @@ function App() {
       return(<div className="grid-item-container no-select" style={{"width": "375px", "height": "375px"}} onClick={() => {}}></div>);
     }
 
+    // If the album has no cover, display the app logo
+    const coverSource = props.album.cover_url || logo;
+
     return (<div className="grid-item-container no-select" onClick={() => { setAlbum(props.album); requestMemoriesByAlbumId(props.album.album_id); setMenu(""); }}>
-      <img src={props.album.cover_url} alt="album cover" style={{"width": "375px", "height": "375px"}}></img>
+      <img src={coverSource} alt="album cover" style={{"width": "375px", "height": "375px"}}></img>
       <h2>{props.album.title}</h2>
     </div>);
   }
 
   function Memory(props) {
     // Trick to get items to display correctly in rows
-    console.log(props);
     if(props.memory == null || props.memory.empty)
     {
       return(<div className="grid-item-container no-select" style={{"width": "375px", "height": "375px"}} onClick={() => {}}></div>) 
@@ -364,7 +360,6 @@ function App() {
 
   function MemoryRow(props)
   {
-    console.log("Number of items: " + props.memories.length); 
     return (<div className="container-row">
       {props.memories.map(memory => (
           <Memory key={uuid_v4()} memory={memory} />
@@ -374,22 +369,22 @@ function App() {
 
   function MemoryContainer(props)
   {
-    const memories = props.memories;
+    const items = props.memories;
 
     // TODO: determine best row size based on screen width
     const ITEM_SIZE = 375;
     const ITEMS_PER_ROW = Math.floor((width - 250) /  ITEM_SIZE);
-    var numberRows = Math.ceil(memories.length / ITEMS_PER_ROW);
+    var numberRows = Math.ceil(items.length / ITEMS_PER_ROW);
 
     var rows = [];
     var row = [];
 
     for(let i = 0; i < numberRows; i++) {
       for(let j = 0; j < ITEMS_PER_ROW; j++) {
-        if(i * ITEMS_PER_ROW + j >= albums.length) {
+        if(i * ITEMS_PER_ROW + j >= items.length) {
           row.push({empty: true});
         }
-        else row.push(memories[i * ITEMS_PER_ROW + j]);
+        else row.push(items[i * ITEMS_PER_ROW + j]);
       }
       rows.push(row);
       row = [];
@@ -407,7 +402,7 @@ function App() {
   {
     return (
       <div className="profile_menu no-select">
-        <p className='no-wrap no-select'>Hi {session}</p>
+        <p className='no-wrap no-select'>Hi {session.username}</p>
         <div className="popup-toggle-menu-container" onMouseLeave={hideProfileMenu}>
           <img src={profile_icon} onClick={toggleProfileMenu} height="48px" alt="profile icon"></img>
 
@@ -416,7 +411,7 @@ function App() {
               <li onClick={() => {setMenu("album_list"); hideProfileMenu()}}>Memory albums</li>
               <li>View all memories</li>
               <li>View profile</li>
-              <li onClick={() => {setSession(""); hideProfileMenu();}}>Sign out</li>
+              <li onClick={() => {setSession(null); hideProfileMenu();}}>Sign out</li>
             </ul>
           </div>
         </div>
@@ -436,15 +431,17 @@ function App() {
       method: 'POST',
       body: formData,
     });
+
+    console.log("Callback function!");
   }
   
-  if(session === "") {
+  if(session == null) {
     return (
       <AccountModal submitHandler={accountActionHandler} errorMessage={errorMessage} setErrorMessage={setErrorMessage}/>
     );
   }
 
-  if(menu === "album_list") {
+  if(session != null && album == null || menu === "album_list") {
       // If user is logged in, display main app
     return (
       <div className="App">
