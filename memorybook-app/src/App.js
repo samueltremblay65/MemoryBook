@@ -1,6 +1,6 @@
 import './App.css';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import { CreateMemoryModal } from "./CreateMemoryModal";
@@ -13,7 +13,6 @@ import {v4 as uuid_v4} from "uuid";
 // Static resources
 import profile_icon from './Images/icon_profile_dark.png'
 import add_icon from './Images/icon_add.png'
-import expand_icon from './Images/icon_expand.png'
 import logo from './Images/Logo.png'
 
 function App() {
@@ -426,14 +425,21 @@ function App() {
       formData.append('files', files[i]);
     }
 
-    // TODO: Add status for image
-    const response = await fetch('http://localhost:3001/image', {
-      method: 'POST',
-      body: formData,
-    });
+    try {
+      // TODO: Add status for image
+      const response = await fetch('http://localhost:3001/image', {
+        method: 'POST',
+        body: formData,
+      });
 
-    console.log("Callback function!");
-  }
+      if (!response.ok) throw new Error('Upload failed');
+      const result = await response.json();
+      console.log('Upload successful:', result);
+      requestMemoriesByAlbumId(album.album_id);
+    } catch (error) {
+        console.error('Error uploading files:', error);
+    }
+  };
   
   if(session == null) {
     return (
@@ -441,7 +447,7 @@ function App() {
     );
   }
 
-  if(session != null && album == null || menu === "album_list") {
+  if(session != null && album == null && menu === "album_list") {
       // If user is logged in, display main app
     return (
       <div className="App">

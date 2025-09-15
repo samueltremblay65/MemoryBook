@@ -350,7 +350,7 @@ app.get('/test', (req, res) => {
 const upload = multer({ storage: storage });
 
 app.post('/image', upload.array('files'), function (req, res) {
-  console.log("Successfully uploaded images");
+  res.status(200).json({ message: 'Files uploaded successfully!' });
 });
 
 app.post('/delete', async (req, res) => {
