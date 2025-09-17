@@ -1,4 +1,7 @@
 import express, { response } from "express";
+import session from "express-session";
+import dotenv from 'dotenv';
+
 import bodyParser from "body-parser";
 
 import sqlite3 from "sqlite3";
@@ -12,14 +15,19 @@ import { fileURLToPath } from 'url';
 const app = express();
 const port = 3001;
 
+dotenv.config();
+
 // create application/x-www-form-urlencoded parser
 var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 let db;
-
 let databaseOpen = false;
 
-app.use(cors());
+// Change for production
+app.use(cors({
+  origin:'http://localhost:3000',
+  credentials: true
+}));
 
 app.use(bodyParser.urlencoded({ extended: false}));
 app.use(bodyParser.json());
@@ -36,7 +44,21 @@ const username = "Sam";
 const password = "Password1"
 const create_base_user = false;
 const create_base_album = false;
-let currentUser = null;
+
+// Session configuration
+app.use(session({
+  name: 'SessionCookie',
+  secret: process.env.SECRET_KEY,
+  resave: false,
+  rolling: true,
+  saveUninitialized: false,
+  cookie: {
+    secure: false,           // set to true if using HTTPS
+    httpOnly: true,
+    sameSite: 'lax',         // 'none' requires secure: true
+    maxAge: 900000           // 15 minutes
+  }
+}));
 
 app.use("/images", express.static(img_path));
 
@@ -93,7 +115,7 @@ function clearAllMemories()
   db.run('DELETE FROM memories')
 }
 
-function createAlbum(album) {
+function createAlbum(album, user) {
   if(!databaseOpen)
   {
     openDatabase();
@@ -101,7 +123,7 @@ function createAlbum(album) {
 
   db.run(
     `INSERT INTO albums(title, author, description, cover_url) VALUES (?,?,?,?)`,
-     [album.title, currentUser.user_id, album.description, album.cover_url],
+     [album.title, user.user_id, album.description, album.cover_url],
      function(error) {
       if (error) {
         return console.log(error.message);
@@ -203,9 +225,19 @@ async function db_fetch_all(query){
   });
 }
 
+app.get(`/session`, (req, res) => {
+  console.log("Session called");
+  if(req.session.user) {
+    console.log("Existing session");
+    res.send(req.session.user);
+  }
+  else {
+    console.log("No existing session");
+    res.send(false);
+  }
+});
+
 app.post('/login', urlencodedParser, async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  
   const body = Object.keys(req.body)[0];
 
   const info = JSON.parse(body);
@@ -216,6 +248,7 @@ app.post('/login', urlencodedParser, async (req, res) => {
   // TODO: Salt and hash
 
   const database_match = await db_fetch_all(`SELECT * FROM users WHERE username="${username}"`);
+  const user = database_match[0];
 
   if(database_match.length == 0) {
     // No account found with username
@@ -228,15 +261,23 @@ app.post('/login', urlencodedParser, async (req, res) => {
   } else {
     // Successful login
     res.status(200);
-    console.log(`User ${database_match[0].username} (ID#${database_match[0].user_id}) logged in successfully`);
-    res.send({user_id: database_match[0].user_id, username: database_match[0].username});
-    currentUser = database_match[0];
+    console.log(`User ${user.username} (ID#${user.user_id}) logged in successfully`);
+    req.session.user = user;
+    req.session.save(err => {
+      if (err) {
+        console.error("Session save error:", err);
+        return res.status(500).send("Error saving session");
+      }
+      res.send({user_id: user.user_id, username: user.username});
+    });
   }
 });
 
-app.post('/signup', urlencodedParser, async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => {});
+});
+
+app.post('/signup', urlencodedParser, async (req, res) => {  
   const body = Object.keys(req.body)[0];
 
   const info = JSON.parse(body);
@@ -282,31 +323,33 @@ app.post('/signup', urlencodedParser, async (req, res) => {
           console.log(`A row has been inserted with rowid ${this.lastID}`);
 
           const user = await getUserById(user_id);
-          // For development
-          currentUser = user;
 
           const starterAlbum = {title: "My memory album", author: user.user_id, description: "", cover_url: null}
-          createAlbum(starterAlbum);
-
-          res.send({username: user.username, user_id: user.user_id});
+          createAlbum(starterAlbum, user);
+          req.session.user = user;
+          req.session.save(err => {
+            if (err) {
+              console.error("Session save error:", err);
+              return res.status(500).send("Error saving session");
+            }
+            res.send({username: user.username, user_id: user.user_id});
+            console.log(`User ${req.session.user} signed up`);
+          });          
       });
     }
   }
 });
 
 app.post('/create/album', urlencodedParser, (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
   const body = Object.keys(req.body)[0];
   const album = JSON.parse(body);
 
-  createAlbum(album);
+  createAlbum(album, req.session.user);
 
   res.send();
 });
 
-app.post('/create/memory', urlencodedParser, (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  
+app.post('/create/memory', urlencodedParser, (req, res) => { 
   const body = Object.keys(req.body)[0];
   const memory = JSON.parse(body);
 
@@ -328,7 +371,7 @@ app.get('/albums/:id', async (req, res) => {
 });
 
 app.get('/user/albums', async (req, res) => {
-  const albums = await db_fetch_all(`SELECT * FROM albums WHERE author=${currentUser.user_id} LIMIT 25`);
+  const albums = await db_fetch_all(`SELECT * FROM albums WHERE author=${req.session.user.user_id} LIMIT 25`);
   res.json(albums);
 });
 
@@ -354,8 +397,6 @@ app.post('/image', upload.array('files'), function (req, res) {
 });
 
 app.post('/delete', async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  
   const body = Object.keys(req.body)[0];
   const memory = JSON.parse(body);
 
