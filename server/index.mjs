@@ -38,13 +38,6 @@ const __dirname = path.dirname(__filename);
 let db_path = path.resolve(__dirname, "./db/storage.db");
 let img_path = path.resolve(__dirname, "./images");
 
-// For development
-const user_id = 1000;
-const username = "Sam";
-const password = "Password1"
-const create_base_user = false;
-const create_base_album = false;
-
 // Session configuration
 app.use(session({
   name: 'SessionCookie',
@@ -71,26 +64,6 @@ db = new sqlite3.Database(db_path, (err) => {
       db.run('CREATE TABLE IF NOT EXISTS albums(album_id INTEGER PRIMARY KEY autoincrement, title string not null, author INTEGER not null, description text, date string, location string, cover_url string, FOREIGN KEY(author) REFERENCES users(user_id))');
       db.run('CREATE TABLE IF NOT EXISTS memories(memory_id INTEGER PRIMARY KEY autoincrement, user INTEGER not null, album INTEGER not null, title string not null, content text, location string, date string, image_urls text, image_ids text, cover_url string, FOREIGN KEY(user) REFERENCES users(user_id), FOREIGN KEY(album) REFERENCES albums(album_id))');
       db.run(`CREATE TABLE IF NOT EXISTS pictures(picture_id INTEGER PRIMARY KEY autoincrement, source string not null, memory INTEGER not null, FOREIGN KEY(memory) REFERENCES memories(memory_id))`);
-      
-      // For development
-      if(create_base_user) {
-          db.run(`INSERT INTO users(user_id,username,password) VALUES (?,?,?)`, [user_id,username, password], function(error) {
-
-          if (error) {
-            return console.log(error.message);
-          }
-
-          console.log(`A row has been inserted with rowid ${this.lastID}`);
-        });
-      }
-      if(create_base_album) {
-        db.run(`INSERT INTO albums(title, author, description, cover_url) VALUES (?,?,?,?)`, ["My Memory Album", user_id, "", ""], function(error) {
-          if (error) {
-            return console.log(error.message);
-          }
-
-        console.log(`A row has been inserted with rowid ${this.lastID}`);});
-      }
     }
 });
 
@@ -103,16 +76,6 @@ function openDatabase() {
 
     databaseOpen = true;
   });
-}
-
-function clearAllMemories()
-{
-  if(!databaseOpen)
-  {
-    openDatabase();
-  }
-
-  db.run('DELETE FROM memories')
 }
 
 function createAlbum(album, user) {
@@ -161,7 +124,7 @@ async function saveMemory(memory)
 
   db.run(
     `INSERT INTO memories(user, album, title, content, location, date, cover_url, image_urls ) VALUES (?,?,?,?,?,?,?,?)`,
-     [user_id, memory.album_id, memory.title, memory.content, memory.location, memory.date, memory.cover_url, memory.image_urls],
+     [memory.user_id, memory.album_id, memory.title, memory.content, memory.location, memory.date, memory.cover_url, memory.image_urls],
      function(error) {
       if (error) {
         return console.log(error.message);
@@ -352,6 +315,7 @@ app.post('/create/album', urlencodedParser, (req, res) => {
 app.post('/create/memory', urlencodedParser, (req, res) => { 
   const body = Object.keys(req.body)[0];
   const memory = JSON.parse(body);
+  memory.user_id = req.session.user.user_id;
 
   saveMemory(memory);
 
@@ -366,7 +330,8 @@ app.get('/memories/:id', async (req, res) => {
 
 app.get('/memories', async (req, res) => {
   const user_id = req.session.user.user_id;
-  const memories = await db_fetch_all(`SELECT * FROM memories WHERE album=${album_id}`);
+  const memories = await db_fetch_all(`SELECT * FROM memories WHERE user=${user_id}`);
+  console.log(memories);
   res.json({memories: memories});
 });
 

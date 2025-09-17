@@ -199,12 +199,29 @@ function App() {
           setAlbums(json);
           loadAlbum(json[0]);
         }
-      });
+    });
       
-      request.open('GET', 'http://localhost:3001/user/albums', true);
-      request.withCredentials = true;
-      request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-      request.send();
+    request.open('GET', 'http://localhost:3001/user/albums', true);
+    request.withCredentials = true;
+    request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+    request.send();
+  }
+
+  function requestAllMemories() {
+    // Send request to fetch memories from memorybook database
+    const request = new XMLHttpRequest();
+    
+    request.addEventListener('load', function () {
+      if (this.readyState === 4 && this.status === 200) {
+          var json = JSON.parse(request.responseText);
+          setMemories(json.memories);
+        }
+    });
+      
+    request.open('GET', 'http://localhost:3001/memories', true);
+    request.withCredentials = true;
+    request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+    request.send();
   }
 
   function requestMemoriesByAlbumId(album_id) {
@@ -216,22 +233,22 @@ function App() {
           var json = JSON.parse(request.responseText);
           setMemories(json.memories);
         }
-      });
+    });
       
-      request.open('GET', 'http://localhost:3001/memories/' + album_id, true);
-      request.withCredentials = true;
-      request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-      request.send();
+    request.open('GET', 'http://localhost:3001/memories/' + album_id, true);
+    request.withCredentials = true;
+    request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+    request.send();
   }
 
   function loadAlbum(album) {
     setAlbum(album);
-    requestMemoriesByAlbumId(album.album_id);
+    if(album.title == "All memories") requestAllMemories();
+    else requestMemoriesByAlbumId(album.album_id);
   }
 
   // Creates a new memory from the user data
-  async function handleCreateModalSubmit(title, location, dateString, content, files, album_id)
-  {
+  async function handleCreateModalSubmit(title, location, dateString, content, files, album_id) {
     let cover_url = rootURL + files[0].name;
     let image_urls = cover_url;
 
