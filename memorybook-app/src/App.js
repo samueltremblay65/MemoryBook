@@ -34,7 +34,7 @@ function App() {
   // For development
   const rootURL = 'http://localhost:3001/images/';
 
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState("wait");
 
   const [menu, setMenu] = useState("");
 
@@ -58,6 +58,7 @@ function App() {
       });
       
       request.open('POST', 'http://localhost:3001/login', true);
+      request.withCredentials = true;
       request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
       request.send(json);
     }
@@ -81,6 +82,7 @@ function App() {
       });
       
       request.open('POST', 'http://localhost:3001/signup', true);
+      request.withCredentials = true;
       request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
       request.send(json);
     }
@@ -131,7 +133,51 @@ function App() {
     setProfileMenuOptions(false);
   }
 
+  function logout() {
+    setSession(null);
+    sendLogoutRequest();
+
+    async function sendLogoutRequest() {
+      const url = "http://localhost:3001/logout";
+      try {
+        const response = await fetch(url, {
+          credentials: 'include' // 🔑 sends cookies with the request
+        });
+        if (!response.ok) {
+          throw new Error(`Response status: ${response.status}`);
+        }
+        console.log("Successfully logged out");
+      } catch (error) {
+        console.error(error.message);
+      }
+    }
+  }
+
   useEffect(() => {
+    async function getSession() {
+      const url = "http://localhost:3001/session";
+      try {
+        const response = await fetch(url, {
+          credentials: 'include' // 🔑 sends cookies with the request
+        });
+        if (!response.ok) {
+          throw new Error(`Response status: ${response.status}`);
+        }
+
+        const user = await response.json();
+
+        if(!user) setSession(null);
+        else {
+          setSession({username: user.username, user_id: user.user_id});
+          sendAlbumListRequest();
+        }
+      } catch (error) {
+        console.error(error.message);
+      }
+    }
+
+    getSession();
+
     const handleResize = () => {
       setWidth(window.innerWidth);
     };
@@ -156,6 +202,7 @@ function App() {
       });
       
       request.open('GET', 'http://localhost:3001/user/albums', true);
+      request.withCredentials = true;
       request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
       request.send();
   }
@@ -171,8 +218,8 @@ function App() {
         }
       });
       
-      console.log(album_id);
       request.open('GET', 'http://localhost:3001/memories/' + album_id, true);
+      request.withCredentials = true;
       request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
       request.send();
   }
@@ -262,6 +309,7 @@ function App() {
     });
     
     request.open('POST', 'http://localhost:3001/create/album', true);
+    request.withCredentials = true;
     request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
     request.send(json);
   }
@@ -278,6 +326,7 @@ function App() {
     });
     
     request.open('POST', 'http://localhost:3001/create/memory', true);
+    request.withCredentials = true;
     request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
     request.send(json);
   }
@@ -333,11 +382,9 @@ function App() {
       return(<div className="grid-item-container no-select" style={{"width": "375px", "height": "375px"}} onClick={() => {}}></div>);
     }
 
-    // If the album has no cover, display the app logo
-    const coverSource = props.album.cover_url || logo;
-
     return (<div className="grid-item-container no-select" onClick={() => { setAlbum(props.album); requestMemoriesByAlbumId(props.album.album_id); setMenu(""); }}>
-      <img src={coverSource} alt="album cover" style={{"width": "375px", "height": "375px"}}></img>
+      {props.album.cover_url && <img src={props.album.cover_url} alt="album cover" style={{"width": "375px", "height": "375px"}}></img>}
+      {!props.album.cover_url && <img src={logo} alt="album cover" width="300px" style={{"width": "375px", "height": "375px", "objectFit": "contain"}}></img>}
       <h2>{props.album.title}</h2>
     </div>);
   }
@@ -410,7 +457,7 @@ function App() {
               <li onClick={() => {setMenu("album_list"); hideProfileMenu()}}>Memory albums</li>
               <li>View all memories</li>
               <li>View profile</li>
-              <li onClick={() => {setSession(null); hideProfileMenu();}}>Sign out</li>
+              <li onClick={() => {logout(); hideProfileMenu();}}>Sign out</li>
             </ul>
           </div>
         </div>
@@ -440,6 +487,12 @@ function App() {
         console.error('Error uploading files:', error);
     }
   };
+
+  if(session === "wait") {
+    return (
+      <div>Waiting</div>
+    );
+  }
   
   if(session == null) {
     return (
@@ -447,7 +500,7 @@ function App() {
     );
   }
 
-  if(session != null && album == null && menu === "album_list") {
+  if(session != null && menu === "album_list") {
       // If user is logged in, display main app
     return (
       <div className="App">

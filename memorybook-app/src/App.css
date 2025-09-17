@@ -141,6 +141,7 @@ img {
 .grid-item-container img {
   border-radius: 20px;
   object-fit: cover;
+  background-color: #545454;
 }
 
 .modal {

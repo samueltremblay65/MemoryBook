@@ -324,7 +324,7 @@ app.post('/signup', urlencodedParser, async (req, res) => {
 
           const user = await getUserById(user_id);
 
-          const starterAlbum = {title: "My memory album", author: user.user_id, description: "", cover_url: null}
+          const starterAlbum = {title: "All memories", author: user.user_id, description: "", cover_url: null}
           createAlbum(starterAlbum, user);
           req.session.user = user;
           req.session.save(err => {
@@ -360,6 +360,12 @@ app.post('/create/memory', urlencodedParser, (req, res) => {
 
 app.get('/memories/:id', async (req, res) => {
   const album_id = req.params.id;
+  const memories = await db_fetch_all(`SELECT * FROM memories WHERE album=${album_id}`);
+  res.json({memories: memories});
+});
+
+app.get('/memories', async (req, res) => {
+  const user_id = req.session.user.user_id;
   const memories = await db_fetch_all(`SELECT * FROM memories WHERE album=${album_id}`);
   res.json({memories: memories});
 });
