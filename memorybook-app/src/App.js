@@ -260,13 +260,15 @@ function App() {
   }
 
   // Creates a new memory from the user data
-  async function handleCreateModalSubmit(title, location, dateString, content, files, album_id) {
-    let cover_url = rootURL + files[0].name;
+  async function handleCreateModalSubmit(title, location, dateString, content, files) {
+    const filenames = await uploadImages(files);
+
+    let cover_url = rootURL + filenames[0];
     let image_urls = cover_url;
 
-    for(var i = 1; i < files.length; i++)
+    for(var i = 1; i < filenames.length; i++)
     {
-      image_urls += "," + (rootURL + files[i].name);
+      image_urls += "," + (rootURL + filenames[i]);
     }
 
     const memory = {
@@ -304,30 +306,33 @@ function App() {
 
     handleCreateModalClose();
     saveMemory(memory);
-
-    uploadImage(files);
     requestMemoriesByAlbumId(album.album_id);
   }
 
     // Creates a new memory from the user data
   function handleCreateAlbumSubmit(title, description, cover)
   {
-    let cover_url = rootURL + cover.name;
-
     const album = {
       title: title,
       description: description,
-      cover_url: cover_url
+      cover: cover
     }
 
     handleCreateAlbumClose();
-    uploadImage([cover]);
     createAlbum(album);
   }
 
-  function createAlbum(album) {
-    const json = JSON.stringify(album);
+  async function createAlbum(album) {
+    const filenames = await uploadImages([album.cover]);
+    const cover_url = filenames[0];
 
+    const albumDBObject = {
+      title: album.title,
+      description: album.description,
+      cover_url: rootURL + cover_url
+    }
+
+    const json = JSON.stringify(albumDBObject);
     const request = new XMLHttpRequest();
     
     request.addEventListener('load', function () {
@@ -343,9 +348,8 @@ function App() {
     request.send(json);
   }
 
-  function saveMemory(memory) { 
+  async function saveMemory(memory) {
     const json = JSON.stringify(memory);
-
     const request = new XMLHttpRequest();
     
     request.addEventListener('load', function () {
@@ -485,7 +489,6 @@ function App() {
             <ul>
               <li onClick={() => {setMenu("album_list"); hideProfileMenu()}}>Memory albums</li>
               <li onClick={() => {showAllMemories(); hideProfileMenu();}}>View all memories</li>
-              <li>View profile</li>
               <li onClick={() => {logout(); hideProfileMenu();}}>Sign out</li>
             </ul>
           </div>
@@ -494,7 +497,7 @@ function App() {
     )
   }
 
-  const uploadImage = async (files) => {
+  const uploadImages = async (files) => {
     let formData = new FormData();
 
     for (let i = 0; i < files.length; i++) {
@@ -509,9 +512,13 @@ function App() {
       });
 
       if (!response.ok) throw new Error('Upload failed');
-      const result = await response.json();
-      console.log('Upload successful:', result);
+
+      const filenames = await response.json();
+
       requestMemoriesByAlbumId(album.album_id);
+
+      return filenames;
+
     } catch (error) {
         console.error('Error uploading files:', error);
     }

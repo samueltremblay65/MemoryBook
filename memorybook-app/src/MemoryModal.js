@@ -13,10 +13,6 @@ export const MemoryModal = ({memory, closeModal }) => {
     gotoContent();
   }, []);
 
-  function encodeSpaces(str) {
-    return str.replace(/\s/g, '%20');
-  }
-
   function gotoContent() {
     const title = document.getElementsByClassName("modal-content")[0];
     title.scrollIntoView({ block: "end" });
@@ -85,9 +81,6 @@ export const MemoryModal = ({memory, closeModal }) => {
               <div className="popup-toggle-menu memory-options-menu" style={{visibility: optionsMenu? "visible" : "hidden" }}>
                 <ul>
                   <li>Edit memory</li>
-                  <li>Add to album</li>
-                  <li>Add to favourites</li>
-                  <li>Add to favourites</li>
                   <li onClick={deleteMemory}>Delete memory</li>
                 </ul>
               </div>

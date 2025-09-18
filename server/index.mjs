@@ -134,9 +134,10 @@ async function saveMemory(memory)
   });
 
   // Give album the memory cover if album has no cover_url
+  // TODO: Instead of this, change render logic to display first memory cover_url in album memories?
+  // TODO: Alternatively, add a function when you delete a memory to update album cover
   const album = await getAlbumById(memory.album_id);
   if(album.cover_url == null) {
-    console.log(memory.cover_url);
     const updateQuery = `UPDATE albums SET cover_url = "${memory.cover_url}" WHERE album_id = ${album.album_id}`;
     db.run(updateQuery, function (err) {
       if (err) {
@@ -189,13 +190,10 @@ async function db_fetch_all(query){
 }
 
 app.get(`/session`, (req, res) => {
-  console.log("Session called");
   if(req.session.user) {
-    console.log("Existing session");
     res.send(req.session.user);
   }
   else {
-    console.log("No existing session");
     res.send(false);
   }
 });
@@ -264,7 +262,6 @@ app.post('/signup', urlencodedParser, async (req, res) => {
   } else {
     // TODO: Perform proper validation
     if(username.length < 3 || username.length > 64) {
-      console.log("Short username");
       res.status(400);
       res.send("Username must be between 6 and 64 characters");
     } if(password.length < 6 || password.length > 64) {
@@ -306,7 +303,7 @@ app.post('/signup', urlencodedParser, async (req, res) => {
 app.post('/create/album', urlencodedParser, (req, res) => {
   const body = Object.keys(req.body)[0];
   const album = JSON.parse(body);
-
+  
   createAlbum(album, req.session.user);
 
   res.send();
@@ -331,7 +328,6 @@ app.get('/memories/:id', async (req, res) => {
 app.get('/memories', async (req, res) => {
   const user_id = req.session.user.user_id;
   const memories = await db_fetch_all(`SELECT * FROM memories WHERE user=${user_id}`);
-  console.log(memories);
   res.json({memories: memories});
 });
 
@@ -352,9 +348,13 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, storage_path)
   },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname)
-  },
+  filename: function (req, file, cb) {
+    const timestamp = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15); // e.g. 20250918T105959
+    const ext = path.extname(file.originalname); // preserves original extension
+    const base = path.basename(file.originalname, ext);
+    const uniqueName = `${base}-${timestamp}${ext}`;
+    cb(null, uniqueName);
+  }
 });
 
 app.get('/test', (req, res) => {
@@ -364,7 +364,8 @@ app.get('/test', (req, res) => {
 const upload = multer({ storage: storage });
 
 app.post('/image', upload.array('files'), function (req, res) {
-  res.status(200).json({ message: 'Files uploaded successfully!' });
+  const filenames = req.files.map(file => file.filename);
+  res.status(200).json(filenames);
 });
 
 app.post('/delete', async (req, res) => {
