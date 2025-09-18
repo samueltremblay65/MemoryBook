@@ -51,7 +51,7 @@ function App() {
           const user_id = JSON.parse(request.responseText).user_id;
           setSession({username: username, user_id: user_id});
 
-          sendAlbumListRequest();
+          sendAlbumListRequest(false);
         }
         else if (this.readyState === 4) {
           setErrorMessage(request.responseText);
@@ -75,7 +75,7 @@ function App() {
           const user_id = JSON.parse(request.responseText).user_id;
           setSession({username: username, user_id: user_id});
 
-          sendAlbumListRequest();
+          sendAlbumListRequest(false);
         }
         else if (this.readyState === 4) {
           setErrorMessage(request.responseText);
@@ -114,7 +114,8 @@ function App() {
   function handleMemoryClose(action)
   {
     setMemoryOpen(null);
-    requestMemoriesByAlbumId(album.album_id);
+
+    loadAlbum(album);
 
     if(action.type === "delete" && action.success) {
       showToastMessage("Memory was deleted successfully");
@@ -156,6 +157,7 @@ function App() {
 
   const requestAllMemories = useCallback(() => {
     // Send request to fetch memories from memorybook database
+    setAlbum({title: "All memories"});
     const request = new XMLHttpRequest();
     
     request.addEventListener('load', function () {
@@ -191,7 +193,7 @@ function App() {
   const loadAlbum = useCallback((album) => {
     setAlbum(album);
 
-    if (album.title === "All memories") {
+    if (album == null || album.title === "All memories") {
       requestAllMemories();
     } else {
       requestMemoriesByAlbumId(album.album_id);
@@ -200,7 +202,7 @@ function App() {
     setMenu("");
   }, [requestAllMemories, requestMemoriesByAlbumId]);
 
-  const sendAlbumListRequest = useCallback(() => {
+  const sendAlbumListRequest = useCallback((openAlbum) => {
     // Send request to fetch album from memorybook database
     const request = new XMLHttpRequest();
     
@@ -208,7 +210,8 @@ function App() {
       if (this.readyState === 4 && this.status === 200) {
           var json = JSON.parse(request.responseText);
           setAlbums(json);
-          loadAlbum(json[0]);
+          if(openAlbum) loadAlbum(json[0]);
+          else setMenu("album_list");
         }
     });
       
@@ -234,7 +237,7 @@ function App() {
         if(!user) setSession(null);
         else {
           setSession({username: user.username, user_id: user.user_id});
-          sendAlbumListRequest();
+          sendAlbumListRequest(false);
         }
       } catch (error) {
         console.error(error.message);
@@ -338,7 +341,7 @@ function App() {
     request.addEventListener('load', function () {
       if (this.readyState === 4 && this.status === 200) {
         console.log(this.responseText);
-        sendAlbumListRequest();
+        sendAlbumListRequest(false);
       }
     });
     

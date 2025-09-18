@@ -71,7 +71,7 @@ export const MemoryModal = ({memory, closeModal }) => {
         <div className="modal-header" onClick={() => closeModal({type: "close"})}></div>
         <div className="modal-content">
           {image_urls.map((source) =>
-            <img className="modal-cover" src={source} key={source} onLoad={gotoContent}></img>
+            <img className="modal-cover" src={source} key={source} onLoad={gotoContent} alt={source}></img>
           )}
 
           <div className="memory-content">
@@ -92,7 +92,7 @@ export const MemoryModal = ({memory, closeModal }) => {
               </div>
               <div className="options-button" onClick={handleOptionsButtonClick}>
                 <span className="align-helper"></span>
-                <img src={icon_ellipsis} height={"32px"}></img>
+                <img src={icon_ellipsis} height={"32px"} alt="ellipsis icon"></img>
               </div>
             </div>
             <p>{memory.content}</p>
